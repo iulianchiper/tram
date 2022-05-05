@@ -72,9 +72,9 @@
             </button>
             <div class="dropdown-menu" aria-labelledby="export-dropdown">
               <a class="dropdown-item btn btn-sm btn-outline-secondary"
-                href="/api/report-export/{{ report.id }}/?type=json">JSON</a>
+                href="/api/reports/{{ report.id }}/json">JSON</a>
               <a class="dropdown-item btn btn-sm btn-outline-secondary"
-                href="/api/report-export/{{ report.id }}/?type=docx">DOCX</a>
+                href="/api/reports/{{ report.id }}/docx">DOCX</a>
             </div>
           </div>
           {% if report.document_id is not None %}

@@ -13,7 +13,9 @@ from django.http import (
     StreamingHttpResponse,
 )
 from django.shortcuts import render
-from rest_framework import viewsets
+from rest_framework import renderers, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 import tram.report.docx
 from tram import serializers
@@ -57,58 +59,56 @@ class ReportViewSet(viewsets.ModelViewSet):
     queryset = Report.objects.all()
     serializer_class = serializers.ReportSerializer
 
+    @action(detail=True, name="Export JSON format")
+    def json(self, request, pk):
+        """
+        Export a report into JSON format.
 
-class ReportExportViewSet(viewsets.ModelViewSet):
-    queryset = Report.objects.all()
-    serializer_class = serializers.ReportExportSerializer
+        This is designed to be called from a browser, so it ignores the
+        negotiated content type and forces JSON rendering.
 
-    def get_queryset(self):
-        queryset = ReportViewSet.queryset
-        document_id = self.request.query_params.get("doc-id", None)
-        if document_id:
-            queryset = queryset.filter(document__id=document_id)
+        :param request: provided by Django
+        :param pk: provided by Django
+        """
+        report = self.get_object()
+        filename = quote(report.name, safe="") + ".json"
+        serializer = serializers.ReportExportSerializer(instance=report)
+        request.accepted_renderer = renderers.JSONRenderer()
+        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+        return Response(
+            serializer.data,
+            content_type="application/json",
+            headers=headers,
+        )
 
-        return queryset
+    @action(detail=True, name="Export DOCX format")
+    def docx(self, request, pk):
+        """
+        Export a report into Word .docx format.
 
-    def retrieve(self, request, *args, **kwargs):
+        This is designed to be called from a browser, so it ignores the
+        negotiated content type and forces .docx rendering.
 
-        report_format = request.GET.get("type", "")
-
-        # If an invalid report_format is given, just default to json
-        if report_format not in ["json", "docx"]:
-            report_format = "json"
-            logger.warning("Invalid File Type. Defaulting to JSON.")
-
-        # Retrieve report data as json
-        response = super().retrieve(request, *args, **kwargs)
-        basename = quote(self.get_object().name, safe="")
-
-        if report_format == "json":
-            response["Content-Disposition"] = f'attachment; filename="{basename}.json"'
-
-        elif report_format == "docx":
-            # Uses json dictionary to create formatted document
-            document = tram.report.docx.build(response.data)
-
-            # save document info
-            buffer = io.BytesIO()
-            document.save(buffer)  # save your memory stream
-            buffer.seek(0)  # rewind the stream
-
-            # put them to streaming content response within docx content_type
-            content_type = (
-                "application/"
-                "vnd.openxmlformats-officedocument.wordprocessingml.document"
-            )
-            response = StreamingHttpResponse(
-                streaming_content=buffer,  # use the stream's content
-                content_type=content_type,
-            )
-
-            response["Content-Disposition"] = f'attachment; filename="{basename}.docx"'
-            response["Content-Encoding"] = "UTF-8"
-
-        return response
+        :param request: provided by Django
+        :param pk: provided by Django
+        """
+        report = self.get_object()
+        filename = quote(report.name, safe="") + ".docx"
+        serializer = serializers.ReportExportSerializer(instance=report)
+        request.accepted_renderer = renderers.JSONRenderer()
+        document = tram.report.docx.build(serializer.data)
+        buffer = io.BytesIO()
+        document.save(buffer)
+        buffer.seek(0)
+        headers = {
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Encoding": "UTF-8",
+        }
+        return StreamingHttpResponse(
+            streaming_content=buffer,
+            content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers=headers,
+        )
 
 
 class SentenceViewSet(viewsets.ModelViewSet):
