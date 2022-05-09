@@ -8,3 +8,4 @@ LABEL "org.opencontainers.image.description"="Threat Report ATT&CK Mapper - Ngin
 
 # Use the TRAM nginx configuration to proxy
 COPY ./docker/nginx-tram.conf /etc/nginx/conf.d/default.conf
+COPY ./docker/nginx-conf-tram.conf /etc/nginx/nginx.conf

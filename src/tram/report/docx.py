@@ -89,7 +89,8 @@ def build(data):
     # characters, otherwise the docx library will raise an error.
     document.add_page_break()
     document.add_heading("Full Document", level=1)
-    cleaned_text = re.sub("[\x00-\x09\x0B-\x1F\x7F]", "�", text)
+    # cleaned_text = re.sub("[\x00-\x09\x0B-\x1F\x7F]", "�", text)
+    cleaned_text = re.sub(u'[^\u0020-\uD7FF\u0009\u000A\u000D\uE000-\uFFFD\U00010000-\U0010FFFF]+', '', text)
     document.add_paragraph(cleaned_text)
 
     return document

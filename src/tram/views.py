@@ -85,6 +85,7 @@ class ReportExportViewSet(viewsets.ModelViewSet):
 
         if report_format == "json":
             response["Content-Disposition"] = f'attachment; filename="{basename}.json"'
+            return response
 
         elif report_format == "docx":
             # Uses json dictionary to create formatted document
@@ -107,8 +108,7 @@ class ReportExportViewSet(viewsets.ModelViewSet):
 
             response["Content-Disposition"] = f'attachment; filename="{basename}.docx"'
             response["Content-Encoding"] = "UTF-8"
-
-        return response
+            return response
 
 
 class SentenceViewSet(viewsets.ModelViewSet):
